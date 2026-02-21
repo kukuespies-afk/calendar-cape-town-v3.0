@@ -1,0 +1,22 @@
+{
+  "name": "afisha-cape-town",
+  "version": "0.1.0",
+  "description": "Weekly and monthly Cape Town events calendar with Telegram bot and verified-source ingestion.",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test",
+    "smoke": "node --test tests/mvp-smoke.test.js",
+    "ingest": "node scripts/run-ingestion.js",
+    "refresh:all": "node scripts/run-refresh-all.js",
+    "scheduler": "node scripts/run-scheduler.js",
+    "demo:seed": "node scripts/seed-demo-data.js",
+    "demo:start": "npm run demo:seed && npm run dev",
+    "seed:curated": "node scripts/seed-curated-events.js",
+    "curated:start": "npm run seed:curated && npm run dev"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

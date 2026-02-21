@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AFISHA CAPE · Cape Town Events MVP</title>
+    <meta
+      name="description"
+      content="Cape Town events MVP: calendar, map, trusted source links, EN/RU UI, and fast add-to-calendar."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=Noto+Sans:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="background-shape background-shape-a" aria-hidden="true"></div>
+    <div class="background-shape background-shape-b" aria-hidden="true"></div>
+
+    <header class="hero shell">
+      <div>
+        <p class="hero-kicker" data-i18n="kicker">Cape Town MVP</p>
+        <h1 data-i18n="headline">Find a plan in 1-2 minutes</h1>
+        <p class="hero-subtitle" data-i18n="subheadline">
+          Trusted source, clear map, fast calendar add.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-outline" href="/api/calendar.ics" data-i18n="downloadAllIcs">Download all .ics</a>
+        <button class="btn btn-primary" id="jumpToNowButton" type="button" data-i18n="jumpToNow">Today</button>
+      </div>
+    </header>
+
+    <div class="top-nav-wrap shell">
+      <nav class="top-nav" aria-label="Primary">
+        <button class="top-nav-item is-active" data-view="calendar" type="button" data-i18n="navCalendar">Calendar</button>
+        <button class="top-nav-item" data-view="map" type="button" data-i18n="navMap">Map</button>
+        <button class="top-nav-item" data-view="saved" type="button" data-i18n="navSaved">Saved</button>
+      </nav>
+    </div>
+
+    <section class="controls shell" aria-label="Filters">
+      <div class="controls-row controls-row-main">
+        <label class="search-field">
+          <span class="sr-only" data-i18n="search">Search</span>
+          <input id="searchInput" type="search" placeholder="Search" autocomplete="off" />
+        </label>
+
+        <div class="segment" role="group" aria-label="Date range">
+          <button type="button" class="segment-item is-active" data-date-preset="today" data-i18n="presetToday">Today</button>
+          <button type="button" class="segment-item" data-date-preset="week" data-i18n="presetWeek">This week</button>
+          <button type="button" class="segment-item" data-date-preset="weekend" data-i18n="presetWeekend">Weekend</button>
+          <button type="button" class="segment-item" data-date-preset="month" data-i18n="presetMonth">This month</button>
+        </div>
+
+        <div class="segment" role="group" aria-label="Price filter">
+          <button type="button" class="segment-item is-active" data-price-filter="all" data-i18n="priceAll">All prices</button>
+          <button type="button" class="segment-item" data-price-filter="free" data-i18n="priceFree">Free</button>
+          <button type="button" class="segment-item" data-price-filter="paid" data-i18n="pricePaid">Paid</button>
+        </div>
+
+        <div class="segment language-switch" role="group" aria-label="Language switch">
+          <button type="button" class="segment-item is-active" data-lang="en">English</button>
+          <button type="button" class="segment-item" data-lang="ru">Русский</button>
+        </div>
+      </div>
+
+      <div class="controls-row controls-row-chips">
+        <div class="chip-scroll" id="categoryChips" aria-label="Category"></div>
+
+        <div class="layer-toggles" role="group" aria-label="Layers">
+          <button type="button" class="chip-toggle" id="firstThursdayToggle" data-i18n="firstThursdayLayer">First Thursdays</button>
+          <button type="button" class="chip-toggle is-active" id="holidayToggle" data-i18n="holidayLayer">Public holidays</button>
+          <button type="button" class="chip-toggle is-active" id="weekendToggle" data-i18n="weekendLayer">Weekends</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="shell">
+      <section class="view-panel is-active" id="calendarView" data-view-panel="calendar">
+        <div class="calendar-layout">
+          <article class="card calendar-card">
+            <header class="card-head">
+              <div>
+                <p class="card-eyebrow" data-i18n="calendarViewLabel">Calendar view</p>
+                <h2 id="calendarRangeLabel"></h2>
+              </div>
+              <div class="calendar-head-actions">
+                <div class="segment" role="group" aria-label="Calendar mode">
+                  <button type="button" class="segment-item is-active" id="monthModeButton" data-calendar-mode="month" data-i18n="month">Month</button>
+                  <button type="button" class="segment-item" id="weekModeButton" data-calendar-mode="week" data-i18n="week">Week</button>
+                </div>
+                <div class="mini-controls">
+                  <button class="icon-btn" id="prevButton" type="button" aria-label="Previous">←</button>
+                  <button class="icon-btn" id="todayButton" type="button" data-i18n="today">Today</button>
+                  <button class="icon-btn" id="nextButton" type="button" aria-label="Next">→</button>
+                </div>
+              </div>
+            </header>
+
+            <div class="weekday-row" id="weekdayRow"></div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </article>
+
+          <article class="card agenda-card">
+            <header class="card-head">
+              <div>
+                <p class="card-eyebrow" data-i18n="selectedDay">Selected day</p>
+                <h3 id="selectedDayLabel"></h3>
+              </div>
+              <p class="card-meta" id="selectedDayMeta"></p>
+            </header>
+            <div class="event-list" id="calendarEventList"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view-panel" id="mapView" data-view-panel="map">
+        <div class="card map-card">
+          <header class="card-head">
+            <div>
+              <p class="card-eyebrow" data-i18n="mapViewLabel">Map + list</p>
+              <h2 data-i18n="mapReady">Address and map are always visible</h2>
+            </div>
+            <div class="mobile-map-toggle segment" role="group" aria-label="Mobile map mode">
+              <button type="button" class="segment-item is-active" data-mobile-surface="map" data-i18n="mobileMap">Map</button>
+              <button type="button" class="segment-item" data-mobile-surface="list" data-i18n="mobileList">List</button>
+            </div>
+          </header>
+
+          <div class="map-layout" id="mapLayout">
+            <div class="map-sidebar" id="mapList"></div>
+            <div class="map-canvas-wrap">
+              <iframe id="mapFrame" title="Map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view-panel" id="savedView" data-view-panel="saved">
+        <article class="card saved-card">
+          <header class="card-head">
+            <div>
+              <p class="card-eyebrow" data-i18n="savedViewLabel">Saved</p>
+              <h2 data-i18n="savedSubtitle">Your shortlist for tonight and weekend</h2>
+            </div>
+            <p class="card-meta" id="savedCountLabel"></p>
+          </header>
+          <div class="event-list" id="savedList"></div>
+        </article>
+      </section>
+    </main>
+
+    <aside class="drawer" id="eventDrawer" hidden>
+      <div class="drawer-backdrop" data-close-drawer></div>
+      <article class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+        <button class="drawer-close" id="drawerClose" type="button" aria-label="Close">×</button>
+        <p class="card-eyebrow" id="drawerCategory"></p>
+        <h3 id="drawerTitle"></h3>
+        <p class="drawer-time" id="drawerDatetime"></p>
+        <div class="drawer-badges" id="drawerPriceRow"></div>
+        <p class="drawer-description" id="drawerDescription"></p>
+
+        <div class="drawer-block">
+          <h4 data-i18n="location">Location</h4>
+          <p id="drawerVenue"></p>
+          <p id="drawerAddress"></p>
+          <iframe id="drawerMapFrame" title="Event map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+
+        <div class="drawer-block" id="drawerRatingBlock"></div>
+
+        <div class="drawer-actions">
+          <a class="btn btn-outline" id="drawerSourceButton" target="_blank" rel="noreferrer" data-i18n="viewSource">View source</a>
+          <a class="btn btn-outline" id="drawerMapButton" target="_blank" rel="noreferrer" data-i18n="openMap">Open map</a>
+          <a class="btn btn-primary" id="drawerGoogleButton" target="_blank" rel="noreferrer" data-i18n="addGoogle">Add to Google Calendar</a>
+          <a class="btn btn-outline" id="drawerIcsButton" data-i18n="downloadIcs">Download .ics</a>
+        </div>
+      </article>
+    </aside>
+
+    <template id="eventCardTemplate">
+      <article class="event-card">
+        <div class="event-card-head">
+          <div>
+            <p class="event-kicker"></p>
+            <h4 class="event-title"></h4>
+          </div>
+          <button class="save-btn" type="button" aria-label="Save">☆</button>
+        </div>
+        <p class="event-time"></p>
+        <p class="event-location"></p>
+        <p class="event-summary"></p>
+        <div class="event-badges"></div>
+        <div class="event-actions">
+          <a class="text-link source-link" target="_blank" rel="noreferrer"></a>
+          <a class="text-link map-link" target="_blank" rel="noreferrer"></a>
+          <button class="text-link details-link" type="button"></button>
+        </div>
+      </article>
+    </template>
+
+    <footer class="shell footer">
+      <p data-i18n="footerNote">MVP focused on quick planning, trusted source links, and clear Cape Town geography.</p>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

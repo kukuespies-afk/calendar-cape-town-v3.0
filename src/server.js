@@ -14,6 +14,7 @@ import { filterEvents, eventsForThisWeek, eventsForThisMonth } from './events/qu
 import { normalizeRawEvent } from './events/normalize.js';
 import { validateEvent } from './events/quality.js';
 import { refreshAllEvents } from './events/refreshAll.js';
+import { nextNightlyRunAt } from './events/autoRefreshSchedule.js';
 import { runIngestion } from './ingest/runIngestion.js';
 import { readJsonBody, sendJson, sendText } from './lib/http.js';
 
@@ -171,6 +172,36 @@ function isAuthorized(req) {
   return req.headers['x-admin-key'] === config.adminKey;
 }
 
+function scheduleNightlyAutoRefresh() {
+  const nextRun = nextNightlyRunAt({
+    now: new Date(),
+    timeZone: config.timezone,
+    hour: config.autoRefreshNightlyHour,
+    minute: config.autoRefreshNightlyMinute
+  });
+  const delayMs = Math.max(1000, nextRun.getTime() - Date.now());
+
+  const timer = setTimeout(() => {
+    runRefreshCycle('nightly')
+      .then((result) => {
+        if (!result.skipped) {
+          console.log(`auto-refresh nightly: curated=${result.curatedUpserted || 0}, total=${result.totalEventsInStorage || 0}`);
+        }
+      })
+      .catch((error) => {
+        console.error('auto-refresh nightly error:', error.message);
+      })
+      .finally(() => {
+        scheduleNightlyAutoRefresh();
+      });
+  }, delayMs);
+
+  timer.unref();
+  console.log(
+    `auto-refresh nightly scheduled for ${nextRun.toISOString()} (${config.timezone} ${String(config.autoRefreshNightlyHour).padStart(2, '0')}:${String(config.autoRefreshNightlyMinute).padStart(2, '0')})`
+  );
+}
+
 async function handleApi(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/health') {
     sendJson(res, 200, {
@@ -182,6 +213,9 @@ async function handleApi(req, res, url) {
       autoRefresh: {
         enabled: config.autoRefreshEnabled,
         onBoot: config.autoRefreshOnBoot,
+        mode: config.autoRefreshMode,
+        nightlyHour: config.autoRefreshNightlyHour,
+        nightlyMinute: config.autoRefreshNightlyMinute,
         intervalMinutes: config.autoRefreshIntervalMinutes,
         includeIngestion: config.autoRefreshIngestion
       },
@@ -458,7 +492,6 @@ async function main() {
   await initRepository();
 
   if (config.autoRefreshEnabled) {
-    const intervalMs = Math.max(15, config.autoRefreshIntervalMinutes) * 60 * 1000;
     if (config.autoRefreshOnBoot) {
       runRefreshCycle('boot')
         .then((result) => {
@@ -469,18 +502,23 @@ async function main() {
         });
     }
 
-    const timer = setInterval(() => {
-      runRefreshCycle('interval')
-        .then((result) => {
-          if (!result.skipped) {
-            console.log(`auto-refresh interval: curated=${result.curatedUpserted || 0}, total=${result.totalEventsInStorage || 0}`);
-          }
-        })
-        .catch((error) => {
-          console.error('auto-refresh interval error:', error.message);
-        });
-    }, intervalMs);
-    timer.unref();
+    if (config.autoRefreshMode === 'interval') {
+      const intervalMs = Math.max(15, config.autoRefreshIntervalMinutes) * 60 * 1000;
+      const timer = setInterval(() => {
+        runRefreshCycle('interval')
+          .then((result) => {
+            if (!result.skipped) {
+              console.log(`auto-refresh interval: curated=${result.curatedUpserted || 0}, total=${result.totalEventsInStorage || 0}`);
+            }
+          })
+          .catch((error) => {
+            console.error('auto-refresh interval error:', error.message);
+          });
+      }, intervalMs);
+      timer.unref();
+    } else {
+      scheduleNightlyAutoRefresh();
+    }
   }
 
   const server = http.createServer(async (req, res) => {
@@ -511,8 +549,25 @@ async function main() {
     }
   });
 
-  server.listen(config.port, () => {
-    console.log(`AFISHA CAPE server is running at ${config.publicBaseUrl} (port ${config.port})`);
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Server could not start: port ${config.port} is already in use on ${config.host}.`);
+      console.error(`Try: HOST=${config.host} PORT=${config.port + 1} npm run dev`);
+      process.exit(1);
+    }
+
+    if (error.code === 'EPERM') {
+      console.error(`Server could not bind to ${config.host}:${config.port}.`);
+      console.error('Try setting HOST=127.0.0.1 or another free local port before running npm run dev.');
+      process.exit(1);
+    }
+
+    console.error(error);
+    process.exit(1);
+  });
+
+  server.listen(config.port, config.host, () => {
+    console.log(`AFISHA CAPE server is running at ${config.publicBaseUrl} (host ${config.host}, port ${config.port})`);
   });
 }
 

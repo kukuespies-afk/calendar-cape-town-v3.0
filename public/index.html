@@ -11,26 +11,50 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=Noto+Sans:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=Noto+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="background-cityscape" aria-hidden="true"></div>
     <div class="background-shape background-shape-a" aria-hidden="true"></div>
     <div class="background-shape background-shape-b" aria-hidden="true"></div>
 
     <header class="hero shell">
-      <div>
+      <div class="hero-copy">
         <p class="hero-kicker" data-i18n="kicker">Cape Town MVP</p>
         <h1 data-i18n="headline">Find a plan in 1-2 minutes</h1>
         <p class="hero-subtitle" data-i18n="subheadline">
           Trusted source, clear map, fast calendar add.
         </p>
+        <p class="hero-theme-note" id="heroThemeNote"></p>
       </div>
-      <div class="hero-actions">
-        <a class="btn btn-outline" href="/api/calendar.ics" data-i18n="downloadAllIcs">Download all .ics</a>
-        <button class="btn btn-primary" id="jumpToNowButton" type="button" data-i18n="jumpToNow">Today</button>
+      <div class="hero-side">
+        <div class="hero-actions">
+          <a class="btn btn-outline" href="/api/calendar.ics" data-i18n="downloadAllIcs">Download all .ics</a>
+          <button class="btn btn-primary" id="jumpToNowButton" type="button" data-i18n="jumpToNow">Today</button>
+        </div>
+
+        <article class="month-poster" id="monthPoster" data-variant="stacked" aria-live="polite">
+          <div class="month-poster-meta">
+            <p class="month-poster-kicker" id="monthPosterKicker"></p>
+            <p class="month-poster-mini" id="monthPosterMini"></p>
+          </div>
+          <div class="month-poster-art-shell">
+            <div class="month-poster-art" id="monthPosterArt" role="img" aria-label="Cape Town month poster artwork"></div>
+          </div>
+          <div class="month-poster-copy">
+            <h2 id="monthPosterTitle"></h2>
+            <p id="monthPosterCaption"></p>
+          </div>
+          <div class="month-poster-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </article>
       </div>
     </header>
 
@@ -43,38 +67,64 @@
     </div>
 
     <section class="controls shell" aria-label="Filters">
-      <div class="controls-row controls-row-main">
+      <div class="controls-bar">
         <label class="search-field">
           <span class="sr-only" data-i18n="search">Search</span>
           <input id="searchInput" type="search" placeholder="Search" autocomplete="off" />
         </label>
 
-        <div class="segment" role="group" aria-label="Date range">
-          <button type="button" class="segment-item is-active" data-date-preset="today" data-i18n="presetToday">Today</button>
-          <button type="button" class="segment-item" data-date-preset="week" data-i18n="presetWeek">This week</button>
-          <button type="button" class="segment-item" data-date-preset="weekend" data-i18n="presetWeekend">Weekend</button>
-          <button type="button" class="segment-item" data-date-preset="month" data-i18n="presetMonth">This month</button>
-        </div>
+        <div class="controls-bar-actions">
+          <button
+            class="filter-trigger"
+            id="filtersToggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="filtersPanel"
+          >
+            <span class="filter-trigger-label" data-i18n="filters">Filters</span>
+            <span class="filter-trigger-meta" id="filterSummary"></span>
+          </button>
 
-        <div class="segment" role="group" aria-label="Price filter">
-          <button type="button" class="segment-item is-active" data-price-filter="all" data-i18n="priceAll">All prices</button>
-          <button type="button" class="segment-item" data-price-filter="free" data-i18n="priceFree">Free</button>
-          <button type="button" class="segment-item" data-price-filter="paid" data-i18n="pricePaid">Paid</button>
-        </div>
-
-        <div class="segment language-switch" role="group" aria-label="Language switch">
-          <button type="button" class="segment-item is-active" data-lang="en">English</button>
-          <button type="button" class="segment-item" data-lang="ru">Русский</button>
+          <div class="segment language-switch" role="group" aria-label="Language switch">
+            <button type="button" class="segment-item is-active" data-lang="en">English</button>
+            <button type="button" class="segment-item" data-lang="ru">Русский</button>
+          </div>
         </div>
       </div>
 
-      <div class="controls-row controls-row-chips">
-        <div class="chip-scroll" id="categoryChips" aria-label="Category"></div>
+      <div class="filters-panel" id="filtersPanel" hidden>
+        <div class="filter-group">
+          <p class="filter-label" data-i18n="filterWhen">When</p>
+          <div class="segment" role="group" aria-label="Date range">
+            <button type="button" class="segment-item is-active" data-date-preset="week" data-i18n="presetWeek">This week</button>
+            <button type="button" class="segment-item" data-date-preset="month" data-i18n="presetMonth">This month</button>
+          </div>
+        </div>
 
-        <div class="layer-toggles" role="group" aria-label="Layers">
-          <button type="button" class="chip-toggle" id="firstThursdayToggle" data-i18n="firstThursdayLayer">First Thursdays</button>
-          <button type="button" class="chip-toggle is-active" id="holidayToggle" data-i18n="holidayLayer">Public holidays</button>
-          <button type="button" class="chip-toggle is-active" id="weekendToggle" data-i18n="weekendLayer">Weekends</button>
+        <div class="filter-group">
+          <p class="filter-label" data-i18n="filterPrice">Price</p>
+          <div class="segment" role="group" aria-label="Price filter">
+            <button type="button" class="segment-item is-active" data-price-filter="all" data-i18n="priceAll">All prices</button>
+            <button type="button" class="segment-item" data-price-filter="free" data-i18n="priceFree">Free</button>
+            <button type="button" class="segment-item" data-price-filter="paid" data-i18n="pricePaid">Paid</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <p class="filter-label" data-i18n="filterCategories">Categories</p>
+          <div class="chip-scroll" id="categoryChips" aria-label="Category"></div>
+        </div>
+
+        <div class="filter-group">
+          <p class="filter-label" data-i18n="filterLayers">Layers</p>
+          <div class="layer-toggles" role="group" aria-label="Layers">
+            <button type="button" class="chip-toggle" id="firstThursdayToggle" data-i18n="firstThursdayLayer">First Thursdays</button>
+            <button type="button" class="chip-toggle is-active" id="holidayToggle" data-i18n="holidayLayer">Public holidays</button>
+            <button type="button" class="chip-toggle is-active" id="weekendToggle" data-i18n="weekendLayer">Weekends</button>
+          </div>
+          <p class="layer-help" data-i18n="firstThursdayHelp">
+            First Thursdays is Cape Town’s monthly gallery-and-nightlife evening on the first Thursday of the month.
+          </p>
         </div>
       </div>
     </section>
@@ -92,6 +142,10 @@
                 <div class="segment" role="group" aria-label="Calendar mode">
                   <button type="button" class="segment-item is-active" id="monthModeButton" data-calendar-mode="month" data-i18n="month">Month</button>
                   <button type="button" class="segment-item" id="weekModeButton" data-calendar-mode="week" data-i18n="week">Week</button>
+                </div>
+                <div class="segment density-switch" role="group" aria-label="Calendar density">
+                  <button type="button" class="segment-item is-active" data-density="comfortable" data-i18n="densityComfortable">Comfortable</button>
+                  <button type="button" class="segment-item" data-density="compact" data-i18n="densityCompact">Compact</button>
                 </div>
                 <div class="mini-controls">
                   <button class="icon-btn" id="prevButton" type="button" aria-label="Previous">←</button>
@@ -113,6 +167,7 @@
               </div>
               <p class="card-meta" id="selectedDayMeta"></p>
             </header>
+            <div class="day-context-list" id="selectedDayContext"></div>
             <div class="event-list" id="calendarEventList"></div>
           </article>
         </div>
@@ -158,6 +213,13 @@
       <div class="drawer-backdrop" data-close-drawer></div>
       <article class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
         <button class="drawer-close" id="drawerClose" type="button" aria-label="Close">×</button>
+        <div class="drawer-media" id="drawerMedia" hidden>
+          <img class="drawer-cover-image" id="drawerCoverImage" alt="" loading="lazy" />
+          <div class="drawer-source-art" id="drawerSourceArt" aria-hidden="true">
+            <span class="drawer-source-art-label" id="drawerSourceArtLabel"></span>
+            <span class="drawer-source-art-title" id="drawerSourceArtTitle"></span>
+          </div>
+        </div>
         <p class="card-eyebrow" id="drawerCategory"></p>
         <h3 id="drawerTitle"></h3>
         <p class="drawer-time" id="drawerDatetime"></p>

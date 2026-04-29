@@ -4,6 +4,9 @@ import { calculateReliability, isTrustedSource, validateEvent } from '../src/eve
 
 test('trusted source detection works', () => {
   assert.equal(isTrustedSource('https://www.capetown.travel/events'), true);
+  assert.equal(isTrustedSource('https://www.ticketmaster.co.za/discover/cape-town?page=1'), true);
+  assert.equal(isTrustedSource('https://www.artscape.co.za/events/'), true);
+  assert.equal(isTrustedSource('https://www.mojomarket.co.za/events'), true);
   assert.equal(isTrustedSource('https://unknown.example.com/event'), false);
 });
 

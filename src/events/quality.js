@@ -3,12 +3,14 @@ const TRUSTED_DOMAINS = [
   'capetownmagazine.com',
   'quicket.co.za',
   'ticketmaster.com',
+  'ticketmaster.co.za',
   'meetup.com',
   'webtickets.co.za',
   'computicket.com',
   'cticc.co.za',
   'howler.co.za',
   'thegalileo.co.za',
+  'dhlstadium.co.za',
   'grandafrica.com',
   'ozcf.co.za',
   'bayharbour.co.za',
@@ -18,7 +20,10 @@ const TRUSTED_DOMAINS = [
   'zeitzmocaa.museum',
   'norvalfoundation.org',
   'sacato.co.za',
-  'whatsonincapetown.com'
+  'whatsonincapetown.com',
+  'artscape.co.za',
+  'mojomarket.co.za',
+  'rockingthedaisies.com'
 ];
 
 export function domainFromUrl(url) {

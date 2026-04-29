@@ -4,8 +4,8 @@
   "description": "Weekly and monthly Cape Town events calendar with Telegram bot and verified-source ingestion.",
   "type": "module",
   "scripts": {
-    "dev": "node src/server.js",
-    "start": "node src/server.js",
+    "dev": "PORT=3400 HOST=127.0.0.1 PUBLIC_BASE_URL=http://localhost:3400 node src/server.js",
+    "start": "PORT=3400 HOST=127.0.0.1 PUBLIC_BASE_URL=http://localhost:3400 node src/server.js",
     "test": "node --test",
     "smoke": "node --test tests/mvp-smoke.test.js",
     "ingest": "node scripts/run-ingestion.js",

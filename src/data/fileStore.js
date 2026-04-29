@@ -3,6 +3,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { config } from '../config/index.js';
 import { nowIso } from '../lib/date.js';
+import { defaultSources } from './defaultSources.js';
+import { dedupeEvents } from '../events/dedupe.js';
 
 const paths = {
   events: path.join(config.dataDir, 'events.json'),
@@ -12,54 +14,7 @@ const paths = {
 
 const defaults = {
   events: [],
-  sources: [
-    {
-      id: 'capetown-tourism',
-      name: 'Cape Town Tourism',
-      type: 'html',
-      url: 'https://www.capetown.travel/events/',
-      categoryHint: 'city',
-      reliable: true,
-      active: false,
-      notes: 'Можно парсить JSON-LD события прямо со страницы (type=html).'
-    },
-    {
-      id: 'quicket-api',
-      name: 'Quicket API',
-      type: 'json',
-      url: 'https://api.quicket.co.za/events',
-      headers: {
-        Authorization: 'Bearer ${QUICKET_API_KEY}'
-      },
-      categoryHint: 'tickets',
-      reliable: true,
-      active: false,
-      notes: 'Требуется QUICKET_API_KEY и корректный endpoint.'
-    },
-    {
-      id: 'cticc-whats-on',
-      name: 'CTICC What\'s On',
-      type: 'html',
-      url: 'https://www.cticc.co.za/visitor/whats-on/',
-      categoryHint: 'market',
-      reliable: true,
-      active: false,
-      notes: 'Источник для крупных выставок/форумов. Можно включить после проверки структуры страницы.'
-    },
-    {
-      id: 'openai-custom-events-api',
-      name: 'Custom OpenAI Events API',
-      type: 'json',
-      url: 'https://your-domain.com/api/events/cape-town',
-      headers: {
-        Authorization: 'Bearer ${OPENAI_EVENTS_API_KEY}'
-      },
-      categoryHint: 'city',
-      reliable: true,
-      active: false,
-      notes: 'Ваш собственный API. Должен возвращать JSON-массив events/items.'
-    }
-  ],
+  sources: defaultSources,
   subscribers: []
 };
 
@@ -90,7 +45,11 @@ async function writeJson(filePath, value) {
 
 export async function getEvents() {
   const events = await readJson(paths.events, defaults.events);
-  return events.sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+  const deduped = dedupeEvents(events);
+  if (deduped.length !== events.length) {
+    await writeJson(paths.events, deduped);
+  }
+  return deduped;
 }
 
 export async function replaceEvents(events) {
@@ -103,16 +62,17 @@ export async function upsertEvents(newEvents) {
   const map = new Map(current.map((event) => [event.id, event]));
 
   for (const event of newEvents) {
-    if (!event.id) {
-      event.id = crypto.createHash('sha256').update(`${event.title}-${event.startAt}-${event.venue || ''}`).digest('hex').slice(0, 16);
-    }
-    map.set(event.id, {
+    const eventId = event.id
+      || crypto.createHash('sha256').update(`${event.title}-${event.startAt}-${event.venue || ''}`).digest('hex').slice(0, 16);
+
+    map.set(eventId, {
       ...event,
+      id: eventId,
       updatedAt: nowIso()
     });
   }
 
-  const result = [...map.values()].sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+  const result = dedupeEvents([...map.values()]);
   await replaceEvents(result);
   return result;
 }

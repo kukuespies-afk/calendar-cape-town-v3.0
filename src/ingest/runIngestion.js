@@ -4,7 +4,7 @@ import { validateEvent } from '../events/quality.js';
 import { dedupeEvents } from '../events/dedupe.js';
 import { parseIcs } from './parsers/ical.js';
 import { parseJsonFeed } from './parsers/json.js';
-import { parseHtmlJsonLd } from './parsers/htmlJsonLd.js';
+import { parseHtmlSource } from './parsers/htmlSource.js';
 
 function interpolateEnv(value) {
   if (typeof value !== 'string') return value;
@@ -36,11 +36,11 @@ async function fetchSource(source) {
 
     if (source.type === 'html') {
       const text = await response.text();
-      return { source, events: parseHtmlJsonLd(text), error: null };
+      return { source, events: parseHtmlSource(text, source), error: null };
     }
 
     const json = await response.json();
-    return { source, events: parseJsonFeed(json), error: null };
+    return { source, events: parseJsonFeed(json, source), error: null };
   } catch (error) {
     return { source, events: [], error: error.name === 'AbortError' ? 'timeout' : 'fetch_failed' };
   } finally {

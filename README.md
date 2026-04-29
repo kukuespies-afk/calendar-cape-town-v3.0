@@ -33,7 +33,13 @@ cp .env.example .env
 npm run dev
 ```
 
-Откройте: `http://localhost:3000`
+Откройте: `http://localhost:3400`
+По умолчанию этот проект использует `http://localhost:3400`, чтобы не пересекаться с другими локальными сайтами.
+
+Если локальная среда запрещает bind на `0.0.0.0` или дефолтный порт `3400` занят:
+```bash
+HOST=127.0.0.1 PORT=3500 PUBLIC_BASE_URL=http://localhost:3500 npm run dev
+```
 
 ## Готовый демо-режим (1 команда)
 
@@ -44,7 +50,7 @@ npm run demo:start
 ```
 
 Это добавит 5 демо-событий в ближайшие дни и запустит сервер.  
-Откройте: `http://localhost:3000`
+Откройте: `http://localhost:3400`
 
 Важно: демо-события помечены префиксом `Демо:` и нужны только для проверки интерфейса и API.
 
@@ -84,8 +90,38 @@ curl -X POST "https://api.telegram.org/bot<token>/setWebhook" \
 - Для каждого источника задайте:
   - `type`: `ical`, `json` или `html`
   - `url`: endpoint/фид
+  - `sourceRole`: `official`, `discovery` или `partner`
   - `active: true`
   - `headers` (если нужен API-ключ)
+
+- Рекомендуемая схема:
+  - `sourceUrl` у события хранит официальный URL организатора, venue или ticketing-page.
+  - `discoveryUrl` и `discoverySourceName` можно хранить отдельно для Shazam, Expomap, RA и других discovery-источников.
+
+### Уже подключённые source-specific адаптеры
+
+- `galileo-open-air`
+  - official open-air screenings и lineup-карточки из [The Galileo](https://thegalileo.co.za/movies/)
+- `ticketmaster-cape-town`
+  - концерты, arena-шоу и stadium sport из [Ticketmaster Cape Town](https://www.ticketmaster.co.za/discover/cape-town?page=1)
+- `dhl-stadium-events`
+  - отдельный официальный competitions feed из [DHL Stadium](https://dhlstadium.co.za/events)
+- `artscape-events`
+  - theatre / opera / jazz / stage-events из [Artscape](https://www.artscape.co.za/events/)
+- `mojo-market-events`
+  - weekly music / movie / social events из [Mojo Market](https://www.mojomarket.co.za/events)
+- `rocking-the-daisies`
+  - festival date-range из [Rocking the Daisies](https://rockingthedaisies.com/ct/general-info/)
+
+Сейчас в `data/sources.json` как `active: true` включены:
+- `galileo-open-air`
+- `ticketmaster-cape-town`
+- `dhl-stadium-events`
+- `artscape-events`
+- `mojo-market-events`
+- `rocking-the-daisies`
+
+Примечание по `dhl-stadium-events`: официальный `competitions` feed у стадиона может быть пустым в отдельные даты. Pipeline уже подключён и начнёт сохранять события, как только стадион опубликует записи в своём API.
 
 Запуск ingestion вручную:
 ```bash
@@ -94,7 +130,7 @@ npm run ingest
 
 Или через API:
 ```bash
-curl -X POST http://localhost:3000/api/ingest -H "x-admin-key: <ADMIN_KEY>"
+curl -X POST http://localhost:3400/api/ingest -H "x-admin-key: <ADMIN_KEY>"
 ```
 
 ## Автообновление всех событий
@@ -106,8 +142,19 @@ curl -X POST http://localhost:3000/api/ingest -H "x-admin-key: <ADMIN_KEY>"
 Управляется через `.env`:
 - `AUTO_REFRESH_ENABLED=true`
 - `AUTO_REFRESH_ON_BOOT=true`
+- `AUTO_REFRESH_MODE=nightly`
+- `AUTO_REFRESH_NIGHTLY_HOUR=2`
+- `AUTO_REFRESH_NIGHTLY_MINUTE=10`
 - `AUTO_REFRESH_INTERVAL_MINUTES=360`
 - `AUTO_REFRESH_INGESTION=true`
+
+По умолчанию приложение работает в nightly-режиме и запускает полный refresh раз в сутки по таймзоне `APP_TIMEZONE`.
+Если нужен старый интервальный режим, переключите:
+
+```bash
+AUTO_REFRESH_MODE=interval
+AUTO_REFRESH_INTERVAL_MINUTES=360
+```
 
 Ручной запуск полного refresh:
 ```bash
@@ -116,7 +163,7 @@ npm run refresh:all
 
 API запуск полного refresh:
 ```bash
-curl -X POST http://localhost:3000/api/refresh-all -H "x-admin-key: <ADMIN_KEY>"
+curl -X POST http://localhost:3400/api/refresh-all -H "x-admin-key: <ADMIN_KEY>"
 ```
 
 ## Google Calendar direct insert (опционально)
@@ -128,7 +175,7 @@ curl -X POST http://localhost:3000/api/refresh-all -H "x-admin-key: <ADMIN_KEY>"
 ```bash
 GOOGLE_CALENDAR_CLIENT_ID=...
 GOOGLE_CALENDAR_CLIENT_SECRET=...
-GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:3000/api/google/oauth/callback
+GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:3400/api/google/oauth/callback
 ```
 3. В Google OAuth настройках добавьте redirect URI из шага 2.
 
@@ -228,3 +275,17 @@ npm run smoke
 - `POST /api/refresh-all` (admin)
 - `POST /api/ai/enrich` (admin, optional OpenAI)
 - `POST /api/telegram/webhook`
+
+## Backlog
+
+### Следующий этап после завершения сайта: conversational Telegram-бот
+
+- Добавить сценарий вопроса: `Что мне сделать сегодня?`
+- Бот должен:
+  - показать актуальные события на сегодня,
+  - уточнить, какой тип событий интересует пользователя,
+  - уметь отвечать и на запросы по конкретной дате,
+  - использовать тот же каталог событий, что и сайт, без отдельной ручной базы.
+- Первый релиз бота делать как discovery-assistant, а не как сложный AI-консьерж:
+  - сначала подборка + уточняющий вопрос по категории,
+  - затем выдача релевантных событий со ссылками на источник.

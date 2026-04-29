@@ -180,6 +180,48 @@ const FIRST_THURSDAYS_INFO = {
   }
 };
 
+const FIRST_THURSDAY_ROUTES = [
+  {
+    tone: 'gallery',
+    title: { en: 'Gallery Sprint', ru: 'Галерейный спринт' },
+    note: {
+      en: 'A short city-centre route for a first-timer: easy walking, early galleries, then one relaxed stop.',
+      ru: 'Короткий маршрут по центру для первого раза: пешком, ранние галереи и один спокойный финальный стоп.'
+    },
+    stops: [
+      { time: '17:30', en: 'Church Square / CBD start', ru: 'Старт у Church Square / CBD' },
+      { time: '18:15', en: 'Loop and Bree Street galleries', ru: 'Галереи на Loop и Bree Street' },
+      { time: '19:45', en: 'Dinner or drinks near Heritage Square', ru: 'Ужин или drinks рядом с Heritage Square' }
+    ]
+  },
+  {
+    tone: 'social',
+    title: { en: 'Creative Night Out', ru: 'Креативный вечер' },
+    note: {
+      en: 'For a group plan: art first, then music, cocktails or a late opening nearby.',
+      ru: 'Для компании: сначала арт, потом музыка, коктейли или late opening неподалёку.'
+    },
+    stops: [
+      { time: '18:00', en: 'Start around Bree / Wale Street', ru: 'Начать в районе Bree / Wale Street' },
+      { time: '19:30', en: 'Pick one live or DJ stop', ru: 'Выбрать один live или DJ-стоп' },
+      { time: '21:00', en: 'Late bar in CBD or Kloof', ru: 'Поздний бар в CBD или Kloof' }
+    ]
+  },
+  {
+    tone: 'calm',
+    title: { en: 'Low-Friction Evening', ru: 'Лёгкий вечер без суеты' },
+    note: {
+      en: 'A gentler route when you want the atmosphere without turning the night into logistics.',
+      ru: 'Более мягкий маршрут, когда хочется атмосферы без сложной логистики.'
+    },
+    stops: [
+      { time: '17:45', en: 'One anchor gallery or museum', ru: 'Одна главная галерея или музей' },
+      { time: '18:45', en: 'Walkable second stop nearby', ru: 'Второй стоп рядом пешком' },
+      { time: '20:00', en: 'Table booking or quick ride home', ru: 'Бронь на ужин или быстрый путь домой' }
+    ]
+  }
+];
+
 const MONTH_THEMES = [
   {
     key: 'jan',
@@ -717,6 +759,7 @@ const TRANSLATIONS = {
     dayContextFirstThursday: 'What is First Thursdays?',
     dayContextWeekend: 'Weekend pattern',
     weekendExplain: 'Weekend dates usually have the highest event density: markets, nightlife, art routes and outdoor plans.',
+    firstThursdayRoutesEyebrow: 'Ready routes',
     observedSuffix: '{name} (observed)'
   },
   ru: {
@@ -808,6 +851,7 @@ const TRANSLATIONS = {
     dayContextFirstThursday: 'Что такое First Thursdays?',
     dayContextWeekend: 'Ритм выходных',
     weekendExplain: 'На выходных обычно самая высокая плотность событий: маркеты, nightlife, арт-маршруты и outdoor-планы.',
+    firstThursdayRoutesEyebrow: 'Готовые маршруты',
     observedSuffix: '{name} (выходной переносится)'
   }
 };
@@ -1367,6 +1411,15 @@ function weekdayLabels() {
 function isFirstThursday(dateLike) {
   const date = new Date(dateLike);
   return date.getDay() === 4 && date.getDate() <= 7;
+}
+
+function nextFirstThursday(fromDate = state.now) {
+  const date = parseDateKey(toDateKeyInTimezone(fromDate, state.timezone));
+  for (let index = 0; index < 70; index += 1) {
+    if (isFirstThursday(date)) return date;
+    date.setDate(date.getDate() + 1);
+  }
+  return parseDateKey(todayKey());
 }
 
 function calculateEasterSunday(year) {
@@ -2373,6 +2426,32 @@ function createBadge(text, className = '') {
   return badge;
 }
 
+function renderFirstThursdayRoutes() {
+  const wrap = document.createElement('div');
+  wrap.className = 'first-thursday-routes';
+
+  FIRST_THURSDAY_ROUTES.forEach((route) => {
+    const card = document.createElement('article');
+    card.className = `first-thursday-route first-thursday-route-${route.tone}`;
+    card.innerHTML = `
+      <p class="context-card-eyebrow">${t('firstThursdayRoutesEyebrow')}</p>
+      <h4 class="context-card-title">${localizedText(route.title)}</h4>
+      <p class="context-card-note">${localizedText(route.note)}</p>
+      <ol class="first-thursday-stops">
+        ${route.stops.map((stop) => `
+          <li>
+            <time>${stop.time}</time>
+            <span>${state.lang === 'ru' ? stop.ru : stop.en}</span>
+          </li>
+        `).join('')}
+      </ol>
+    `;
+    wrap.appendChild(card);
+  });
+
+  elements.selectedDayContext.appendChild(wrap);
+}
+
 function renderSelectedDayContext() {
   const selectedDate = parseDateKey(state.selectedDateKey);
   const holidayEntries = getHolidayEntries(selectedDate);
@@ -2426,6 +2505,10 @@ function renderSelectedDayContext() {
     `;
     elements.selectedDayContext.appendChild(card);
   });
+
+  if (isFirstThursday(selectedDate)) {
+    renderFirstThursdayRoutes();
+  }
 }
 
 function createEventCard(event, context = 'calendar') {
@@ -2811,6 +2894,14 @@ function wireUi() {
 
   elements.firstThursdayToggle.addEventListener('click', () => {
     state.firstThursdayOnly = !state.firstThursdayOnly;
+    if (state.firstThursdayOnly) {
+      const target = nextFirstThursday(state.now);
+      state.view = 'calendar';
+      state.datePreset = 'week';
+      state.calendarMode = 'week';
+      state.cursor = target;
+      state.selectedDateKey = toCalendarDateKey(target);
+    }
     renderAll();
   });
 

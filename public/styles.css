@@ -1001,6 +1001,55 @@ body[data-month-variant='grid'] .calendar-day {
   color: var(--ui-ink-soft);
 }
 
+.first-thursday-routes {
+  display: grid;
+  gap: 8px;
+}
+
+.first-thursday-route {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ui-action) 34%, var(--ui-border) 66%);
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--route-tone, var(--ui-action)) 16%, transparent 84%) 0%, transparent 42%),
+    linear-gradient(180deg, rgba(18, 31, 46, 0.96) 0%, rgba(24, 41, 60, 0.94) 100%);
+}
+
+.first-thursday-route-gallery {
+  --route-tone: #9b7dff;
+}
+
+.first-thursday-route-social {
+  --route-tone: var(--ui-accent-alt);
+}
+
+.first-thursday-route-calm {
+  --route-tone: #2fd7cf;
+}
+
+.first-thursday-stops {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.first-thursday-stops li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  color: var(--ui-ink-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.first-thursday-stops time {
+  color: color-mix(in srgb, var(--route-tone, var(--ui-action)) 58%, white 42%);
+  font-weight: 800;
+}
+
 .event-card {
   padding: 12px;
   border-radius: 16px;

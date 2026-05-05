@@ -687,8 +687,13 @@ const TRANSLATIONS = {
     filterSummaryActive: '{count} active',
     filterWhen: 'When',
     filterPrice: 'Price',
+    filterQuick: 'Quick picks',
     filterCategories: 'Categories',
     filterLayers: 'Layers',
+    quickTonight: 'Tonight',
+    quickFree: 'Free',
+    quickMusic: 'Music',
+    quickCbd: 'Near CBD',
     search: 'Search',
     searchPlaceholder: 'Search by event, venue, area',
     presetToday: 'Today',
@@ -701,6 +706,7 @@ const TRANSLATIONS = {
     firstThursdayLayer: 'First Thursdays only',
     holidayLayer: 'Public holidays',
     weekendLayer: 'Weekends',
+    hidePastLayer: 'Hide past',
     firstThursdayHelp: 'First Thursdays is Cape Town’s monthly first-Thursday art and nightlife evening across galleries, studios and the city centre.',
     calendarViewLabel: 'Calendar view',
     month: 'Month',
@@ -722,6 +728,9 @@ const TRANSLATIONS = {
     downloadIcs: 'Download .ics',
     copyEvent: 'Copy event',
     copiedEvent: 'Copied',
+    bestPick: 'Best pick',
+    similarEvents: 'Similar events',
+    lastUpdated: 'Updated {time}',
     footerNote: 'MVP focused on quick planning, trusted source links, and clear Cape Town geography.',
     chipAll: 'All',
     chipArtCulture: 'Art & culture',
@@ -784,8 +793,13 @@ const TRANSLATIONS = {
     filterSummaryActive: 'Активно: {count}',
     filterWhen: 'Когда',
     filterPrice: 'Цена',
+    filterQuick: 'Быстрый выбор',
     filterCategories: 'Категории',
     filterLayers: 'Слои',
+    quickTonight: 'Сегодня вечером',
+    quickFree: 'Бесплатно',
+    quickMusic: 'Музыка',
+    quickCbd: 'Рядом с CBD',
     search: 'Поиск',
     searchPlaceholder: 'Поиск по событию, месту, району',
     presetToday: 'Сегодня',
@@ -798,6 +812,7 @@ const TRANSLATIONS = {
     firstThursdayLayer: 'Только First Thursdays',
     holidayLayer: 'Праздники ЮАР',
     weekendLayer: 'Выходные',
+    hidePastLayer: 'Скрыть прошедшие',
     firstThursdayHelp: 'First Thursdays — ежемесячный арт- и nightlife-вечер в первый четверг месяца: галереи, студии и late openings в центре Кейптауна.',
     calendarViewLabel: 'Календарный вид',
     month: 'Месяц',
@@ -819,6 +834,9 @@ const TRANSLATIONS = {
     downloadIcs: 'Скачать .ics',
     copyEvent: 'Скопировать событие',
     copiedEvent: 'Скопировано',
+    bestPick: 'Лучший выбор',
+    similarEvents: 'Похожие события',
+    lastUpdated: 'Обновлено {time}',
     footerNote: 'MVP фокусируется на быстром выборе, источнике и понятной географии Кейптауна.',
     chipAll: 'Все',
     chipArtCulture: 'Арт и культура',
@@ -880,15 +898,18 @@ const elements = {
   navButtons: document.querySelectorAll('.top-nav-item[data-view]'),
   viewPanels: document.querySelectorAll('.view-panel[data-view-panel]'),
   searchInput: document.getElementById('searchInput'),
+  lastUpdatedLabel: document.getElementById('lastUpdatedLabel'),
   filtersToggle: document.getElementById('filtersToggle'),
   filterSummary: document.getElementById('filterSummary'),
   filtersPanel: document.getElementById('filtersPanel'),
   datePresetButtons: document.querySelectorAll('.segment-item[data-date-preset]'),
   priceButtons: document.querySelectorAll('.segment-item[data-price-filter]'),
+  quickButtons: document.querySelectorAll('.chip[data-quick-filter]'),
   langButtons: document.querySelectorAll('.segment-item[data-lang]'),
   firstThursdayToggle: document.getElementById('firstThursdayToggle'),
   holidayToggle: document.getElementById('holidayToggle'),
   weekendToggle: document.getElementById('weekendToggle'),
+  hidePastToggle: document.getElementById('hidePastToggle'),
   categoryChips: document.getElementById('categoryChips'),
   calendarRangeLabel: document.getElementById('calendarRangeLabel'),
   monthModeButton: document.getElementById('monthModeButton'),
@@ -899,6 +920,7 @@ const elements = {
   selectedDayLabel: document.getElementById('selectedDayLabel'),
   selectedDayMeta: document.getElementById('selectedDayMeta'),
   selectedDayInsight: document.getElementById('selectedDayInsight'),
+  bestPickButton: document.getElementById('bestPickButton'),
   calendarEventList: document.getElementById('calendarEventList'),
   selectedDayContext: document.getElementById('selectedDayContext'),
   mapList: document.getElementById('mapList'),
@@ -927,6 +949,7 @@ const elements = {
   drawerAddress: document.getElementById('drawerAddress'),
   drawerMapFrame: document.getElementById('drawerMapFrame'),
   drawerRatingBlock: document.getElementById('drawerRatingBlock'),
+  drawerSimilarBlock: document.getElementById('drawerSimilarBlock'),
   drawerSourceButton: document.getElementById('drawerSourceButton'),
   drawerMapButton: document.getElementById('drawerMapButton'),
   drawerGoogleButton: document.getElementById('drawerGoogleButton'),
@@ -947,10 +970,12 @@ const state = {
   filtersOpen: false,
   search: '',
   priceFilter: 'all',
+  quickFilter: '',
   activeChip: 'all',
   firstThursdayOnly: false,
   showHolidayLayer: true,
   showWeekendLayer: true,
+  hidePastEvents: true,
   mobileSurface: 'map',
   googleCalendarDirectInsertEnabled: false,
   events: [],
@@ -1578,6 +1603,15 @@ function eventDateKey(event) {
   return toDateKeyInTimezone(event.startAt, state.timezone);
 }
 
+function eventComparableEnd(event) {
+  return event.endAt ? new Date(event.endAt) : new Date(event.startAt);
+}
+
+function isPastEvent(event) {
+  const end = eventComparableEnd(event);
+  return !Number.isNaN(end.getTime()) && end.getTime() < state.now.getTime();
+}
+
 function getVisibleRange() {
   if (state.calendarMode === 'week') {
     const start = startOfWeekMonday(state.cursor);
@@ -1689,6 +1723,10 @@ function mapQuery(event) {
   return chunks.join(', ');
 }
 
+function isNearCbd(event) {
+  return /\b(cbd|city centre|city center|foreshore|bree|loop|long street|wale|kloof|gardens|bo kaap)\b/.test(eventSearchBlob(event));
+}
+
 function eventSourceUrl(event) {
   const source = cleanText(event.sourceUrl) || cleanText(event.ticketsUrl);
   return source || mapDeepLink(event);
@@ -1741,6 +1779,47 @@ function eventShareText(event) {
     eventSourceUrl(event)
   ].filter(Boolean);
   return lines.join('\n');
+}
+
+function similarEventsFor(event) {
+  const eventDay = eventDateKey(event);
+  return sortEventsForDiscovery(state.events)
+    .filter((candidate) => candidate.id !== event.id)
+    .filter((candidate) => !state.hidePastEvents || !isPastEvent(candidate))
+    .filter((candidate) => {
+      if (candidate.category === event.category) return true;
+      if (candidate.placeType && candidate.placeType === event.placeType) return true;
+      return eventDateKey(candidate) === eventDay && eventTone(candidate) === eventTone(event);
+    })
+    .slice(0, 2);
+}
+
+function renderSimilarEvents(event) {
+  const similar = similarEventsFor(event);
+  elements.drawerSimilarBlock.innerHTML = '';
+  elements.drawerSimilarBlock.hidden = similar.length === 0;
+
+  if (!similar.length) return;
+
+  const title = document.createElement('h4');
+  title.textContent = t('similarEvents');
+  elements.drawerSimilarBlock.appendChild(title);
+
+  const list = document.createElement('div');
+  list.className = 'similar-events-list';
+  similar.forEach((item) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'similar-event';
+    button.dataset.tone = eventTone(item);
+    button.innerHTML = `
+      <span>${formatClockTime(item.startAt)} • ${categoryLabel(item.category)}</span>
+      <strong>${truncateText(cleanText(item.title), 58)}</strong>
+    `;
+    button.addEventListener('click', () => openDrawer(item.id));
+    list.appendChild(button);
+  });
+  elements.drawerSimilarBlock.appendChild(list);
 }
 
 function matchesCategoryChip(event) {
@@ -1835,10 +1914,30 @@ function applyFilters(events) {
   return events
     .filter((event) => inVisibleRange(event, range))
     .filter((event) => {
+      if (!state.hidePastEvents) return true;
+      return !isPastEvent(event);
+    })
+    .filter((event) => {
       if (!search) return true;
       return eventSearchBlob(event).includes(search);
     })
     .filter((event) => matchesCategoryChip(event))
+    .filter((event) => {
+      if (state.quickFilter === 'tonight') {
+        const parts = timePartsInTimezone(event.startAt);
+        return eventDateKey(event) === todayKey() && parts && parts.hour >= 17;
+      }
+      if (state.quickFilter === 'free') {
+        return detectPriceMeta(event).tier === 'free';
+      }
+      if (state.quickFilter === 'music') {
+        return ['music', 'nightlife', 'dance'].includes(event.category);
+      }
+      if (state.quickFilter === 'cbd') {
+        return isNearCbd(event);
+      }
+      return true;
+    })
     .filter((event) => {
       const price = detectPriceMeta(event);
       if (state.priceFilter === 'free') return price.tier === 'free';
@@ -1874,6 +1973,24 @@ function buildDayInsight(dayEvents) {
   const firstTime = formatClockTime(sortEventsForDiscovery(dayEvents)[0].startAt);
   const key = dayEvents.length === 1 ? 'dayInsightSingle' : 'dayInsightMany';
   return t(key, { count: dayEvents.length, top, time: firstTime });
+}
+
+function renderLastUpdated() {
+  const latest = state.events
+    .map((event) => new Date(event.updatedAt || event.startAt))
+    .filter((date) => !Number.isNaN(date.getTime()))
+    .sort((a, b) => b - a)[0];
+
+  elements.lastUpdatedLabel.textContent = latest
+    ? t('lastUpdated', {
+      time: formatDateTime(latest, {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    })
+    : '';
 }
 
 function getEventById(eventId) {
@@ -1941,6 +2058,7 @@ function renderCategoryChips() {
 function activeFilterCount() {
   let count = 0;
   if (state.search) count += 1;
+  if (state.quickFilter) count += 1;
   if (state.firstThursdayOnly) count += 1;
   if (!state.showHolidayLayer) count += 1;
   if (!state.showWeekendLayer) count += 1;
@@ -1961,6 +2079,16 @@ function renderFilterSummary() {
   if (state.activeChip !== 'all') {
     const chip = CATEGORY_CHIPS.find((item) => item.id === state.activeChip);
     if (chip) parts.push(t(chip.key));
+  }
+
+  if (state.quickFilter) {
+    const key = {
+      tonight: 'quickTonight',
+      free: 'quickFree',
+      music: 'quickMusic',
+      cbd: 'quickCbd'
+    }[state.quickFilter];
+    if (key) parts.push(t(key));
   }
 
   if (state.search) {
@@ -1993,6 +2121,10 @@ function syncControlStates() {
     button.classList.toggle('is-active', button.dataset.priceFilter === state.priceFilter);
   });
 
+  elements.quickButtons.forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.quickFilter === state.quickFilter);
+  });
+
   elements.langButtons.forEach((button) => {
     button.classList.toggle('is-active', button.dataset.lang === state.lang);
   });
@@ -2007,6 +2139,7 @@ function syncControlStates() {
   elements.firstThursdayToggle.classList.toggle('is-active', state.firstThursdayOnly);
   elements.holidayToggle.classList.toggle('is-active', state.showHolidayLayer);
   elements.weekendToggle.classList.toggle('is-active', state.showWeekendLayer);
+  elements.hidePastToggle.classList.toggle('is-active', state.hidePastEvents);
 
   elements.mobileSurfaceButtons.forEach((button) => {
     button.classList.toggle('is-active', button.dataset.mobileSurface === state.mobileSurface);
@@ -2662,6 +2795,18 @@ function renderSelectedDayPanel() {
   elements.selectedDayMeta.textContent = dayEvents.length ? t('eventsCount', { count: dayEvents.length }) : t('selectDateHint');
   elements.selectedDayInsight.textContent = buildDayInsight(dayEvents);
 
+  const bestPick = dayEvents[0] || null;
+  elements.bestPickButton.hidden = !bestPick;
+  if (bestPick) {
+    elements.bestPickButton.dataset.eventId = bestPick.id;
+    elements.bestPickButton.innerHTML = `
+      <span>${t('bestPick')}</span>
+      <strong>${truncateText(cleanText(bestPick.title), 64)}</strong>
+    `;
+  } else {
+    elements.bestPickButton.removeAttribute('data-event-id');
+  }
+
   renderSelectedDayContext();
   renderList(elements.calendarEventList, dayEvents, 'emptyDay', 'calendar');
 }
@@ -2762,6 +2907,7 @@ function openDrawer(eventId) {
   }
   elements.drawerRatingBlock.appendChild(title);
   elements.drawerRatingBlock.appendChild(body);
+  renderSimilarEvents(event);
 
   elements.drawerSourceButton.href = sourceUrl;
   elements.drawerSourceButton.removeAttribute('aria-disabled');
@@ -2771,6 +2917,7 @@ function openDrawer(eventId) {
     ? googleOauthStartLink(event)
     : googleCalendarLink(event);
   elements.drawerIcsButton.href = eventIcsLink(event);
+  elements.drawerCopyButton.textContent = t('copyEvent');
 
   elements.drawer.hidden = false;
   elements.body.classList.add('drawer-open');
@@ -2808,6 +2955,7 @@ function renderAll() {
   renderCategoryChips();
   syncControlStates();
   renderFilterSummary();
+  renderLastUpdated();
   renderWeekdayRow();
 
   ensureSelectedDateInRange();
@@ -2889,6 +3037,20 @@ function wireUi() {
     });
   });
 
+  elements.quickButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextQuickFilter = button.dataset.quickFilter || '';
+      state.quickFilter = state.quickFilter === nextQuickFilter ? '' : nextQuickFilter;
+      if (state.quickFilter === 'tonight') {
+        state.datePreset = 'week';
+        state.calendarMode = 'week';
+        state.cursor = parseDateKey(todayKey());
+        state.selectedDateKey = todayKey();
+      }
+      renderAll();
+    });
+  });
+
   elements.langButtons.forEach((button) => {
     button.addEventListener('click', () => {
       state.lang = button.dataset.lang === 'ru' ? 'ru' : 'en';
@@ -2946,6 +3108,11 @@ function wireUi() {
     renderAll();
   });
 
+  elements.bestPickButton.addEventListener('click', () => {
+    const eventId = elements.bestPickButton.dataset.eventId;
+    if (eventId) openDrawer(eventId);
+  });
+
   elements.firstThursdayToggle.addEventListener('click', () => {
     state.firstThursdayOnly = !state.firstThursdayOnly;
     if (state.firstThursdayOnly) {
@@ -2966,6 +3133,11 @@ function wireUi() {
 
   elements.weekendToggle.addEventListener('click', () => {
     state.showWeekendLayer = !state.showWeekendLayer;
+    renderAll();
+  });
+
+  elements.hidePastToggle.addEventListener('click', () => {
+    state.hidePastEvents = !state.hidePastEvents;
     renderAll();
   });
 

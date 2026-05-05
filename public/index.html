@@ -79,6 +79,7 @@
         </label>
 
         <div class="controls-bar-actions">
+          <p class="last-updated" id="lastUpdatedLabel"></p>
           <button
             class="filter-trigger"
             id="filtersToggle"
@@ -116,6 +117,16 @@
         </div>
 
         <div class="filter-group">
+          <p class="filter-label" data-i18n="filterQuick">Quick picks</p>
+          <div class="chip-scroll" id="quickChips" aria-label="Quick picks">
+            <button type="button" class="chip" data-quick-filter="tonight" data-i18n="quickTonight">Tonight</button>
+            <button type="button" class="chip" data-quick-filter="free" data-i18n="quickFree">Free</button>
+            <button type="button" class="chip" data-quick-filter="music" data-i18n="quickMusic">Music</button>
+            <button type="button" class="chip" data-quick-filter="cbd" data-i18n="quickCbd">Near CBD</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
           <p class="filter-label" data-i18n="filterCategories">Categories</p>
           <div class="chip-scroll" id="categoryChips" aria-label="Category"></div>
         </div>
@@ -126,6 +137,7 @@
             <button type="button" class="chip-toggle" id="firstThursdayToggle" data-i18n="firstThursdayLayer">First Thursdays</button>
             <button type="button" class="chip-toggle is-active" id="holidayToggle" data-i18n="holidayLayer">Public holidays</button>
             <button type="button" class="chip-toggle is-active" id="weekendToggle" data-i18n="weekendLayer">Weekends</button>
+            <button type="button" class="chip-toggle is-active" id="hidePastToggle" data-i18n="hidePastLayer">Hide past</button>
           </div>
           <p class="layer-help" data-i18n="firstThursdayHelp">
             First Thursdays is Cape Town’s monthly gallery-and-nightlife evening on the first Thursday of the month.
@@ -173,6 +185,7 @@
               <p class="card-meta" id="selectedDayMeta"></p>
             </header>
             <p class="day-insight" id="selectedDayInsight"></p>
+            <button class="best-pick" id="bestPickButton" type="button" hidden></button>
             <div class="day-context-list" id="selectedDayContext"></div>
             <div class="event-list" id="calendarEventList"></div>
           </article>
@@ -240,6 +253,7 @@
         </div>
 
         <div class="drawer-block" id="drawerRatingBlock"></div>
+        <div class="drawer-block drawer-similar" id="drawerSimilarBlock"></div>
 
         <div class="drawer-actions">
           <a class="btn btn-outline" id="drawerSourceButton" target="_blank" rel="noreferrer" data-i18n="viewSource">View source</a>

@@ -720,6 +720,8 @@ const TRANSLATIONS = {
     openMap: 'Open map',
     addGoogle: 'Add to Google Calendar',
     downloadIcs: 'Download .ics',
+    copyEvent: 'Copy event',
+    copiedEvent: 'Copied',
     footerNote: 'MVP focused on quick planning, trusted source links, and clear Cape Town geography.',
     chipAll: 'All',
     chipArtCulture: 'Art & culture',
@@ -760,6 +762,9 @@ const TRANSLATIONS = {
     dayContextWeekend: 'Weekend pattern',
     weekendExplain: 'Weekend dates usually have the highest event density: markets, nightlife, art routes and outdoor plans.',
     firstThursdayRoutesEyebrow: 'Ready routes',
+    dayInsightEmpty: 'A quiet day. Try another date or remove filters.',
+    dayInsightSingle: '1 event · {top} · starts around {time}',
+    dayInsightMany: '{count} events · {top} · first starts around {time}',
     observedSuffix: '{name} (observed)'
   },
   ru: {
@@ -812,6 +817,8 @@ const TRANSLATIONS = {
     openMap: 'Open map',
     addGoogle: 'Добавить в Google Calendar',
     downloadIcs: 'Скачать .ics',
+    copyEvent: 'Скопировать событие',
+    copiedEvent: 'Скопировано',
     footerNote: 'MVP фокусируется на быстром выборе, источнике и понятной географии Кейптауна.',
     chipAll: 'Все',
     chipArtCulture: 'Арт и культура',
@@ -852,6 +859,9 @@ const TRANSLATIONS = {
     dayContextWeekend: 'Ритм выходных',
     weekendExplain: 'На выходных обычно самая высокая плотность событий: маркеты, nightlife, арт-маршруты и outdoor-планы.',
     firstThursdayRoutesEyebrow: 'Готовые маршруты',
+    dayInsightEmpty: 'Спокойный день. Попробуйте другую дату или уберите фильтры.',
+    dayInsightSingle: '1 событие · {top} · старт около {time}',
+    dayInsightMany: '{count} событий · {top} · первое около {time}',
     observedSuffix: '{name} (выходной переносится)'
   }
 };
@@ -888,6 +898,7 @@ const elements = {
   calendarGrid: document.getElementById('calendarGrid'),
   selectedDayLabel: document.getElementById('selectedDayLabel'),
   selectedDayMeta: document.getElementById('selectedDayMeta'),
+  selectedDayInsight: document.getElementById('selectedDayInsight'),
   calendarEventList: document.getElementById('calendarEventList'),
   selectedDayContext: document.getElementById('selectedDayContext'),
   mapList: document.getElementById('mapList'),
@@ -919,7 +930,8 @@ const elements = {
   drawerSourceButton: document.getElementById('drawerSourceButton'),
   drawerMapButton: document.getElementById('drawerMapButton'),
   drawerGoogleButton: document.getElementById('drawerGoogleButton'),
-  drawerIcsButton: document.getElementById('drawerIcsButton')
+  drawerIcsButton: document.getElementById('drawerIcsButton'),
+  drawerCopyButton: document.getElementById('drawerCopyButton')
 };
 
 const state = {
@@ -1721,6 +1733,16 @@ function googleOauthStartLink(event) {
   return `/api/google/oauth/start?eventId=${encodeURIComponent(event.id)}`;
 }
 
+function eventShareText(event) {
+  const lines = [
+    cleanText(event.title) || 'Cape Town event',
+    formatEventTime(event),
+    cleanText(event.venue),
+    eventSourceUrl(event)
+  ].filter(Boolean);
+  return lines.join('\n');
+}
+
 function matchesCategoryChip(event) {
   switch (state.activeChip) {
     case 'artCulture':
@@ -1832,6 +1854,26 @@ function applyFilters(events) {
 
 function getEventsForSelectedDay() {
   return sortEventsForDiscovery(state.filteredEvents.filter((event) => eventDateKey(event) === state.selectedDateKey));
+}
+
+function buildDayInsight(dayEvents) {
+  if (!dayEvents.length) return t('dayInsightEmpty');
+
+  const counts = new Map();
+  dayEvents.forEach((event) => {
+    const label = categoryLabel(event.category);
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+
+  const top = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([label]) => label)
+    .join(' / ');
+
+  const firstTime = formatClockTime(sortEventsForDiscovery(dayEvents)[0].startAt);
+  const key = dayEvents.length === 1 ? 'dayInsightSingle' : 'dayInsightMany';
+  return t(key, { count: dayEvents.length, top, time: firstTime });
 }
 
 function getEventById(eventId) {
@@ -2618,6 +2660,7 @@ function renderSelectedDayPanel() {
 
   elements.selectedDayLabel.textContent = dayLabel;
   elements.selectedDayMeta.textContent = dayEvents.length ? t('eventsCount', { count: dayEvents.length }) : t('selectDateHint');
+  elements.selectedDayInsight.textContent = buildDayInsight(dayEvents);
 
   renderSelectedDayContext();
   renderList(elements.calendarEventList, dayEvents, 'emptyDay', 'calendar');
@@ -2737,6 +2780,17 @@ function closeDrawer() {
   state.drawerEventId = null;
   elements.drawer.hidden = true;
   elements.body.classList.remove('drawer-open');
+}
+
+async function copyDrawerEvent() {
+  const event = getEventById(state.drawerEventId);
+  if (!event || !navigator.clipboard?.writeText) return;
+
+  await navigator.clipboard.writeText(eventShareText(event));
+  elements.drawerCopyButton.textContent = t('copiedEvent');
+  setTimeout(() => {
+    elements.drawerCopyButton.textContent = t('copyEvent');
+  }, 1400);
 }
 
 function ensureSelectedDateInRange() {
@@ -2923,6 +2977,12 @@ function wireUi() {
   });
 
   elements.drawerClose.addEventListener('click', closeDrawer);
+  elements.drawerCopyButton.addEventListener('click', () => {
+    copyDrawerEvent().catch(() => {
+      elements.drawerCopyButton.textContent = t('copyEvent');
+    });
+  });
+
   elements.drawer.addEventListener('click', (event) => {
     if (event.target.hasAttribute('data-close-drawer')) {
       closeDrawer();

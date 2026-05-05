@@ -14,6 +14,11 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=Noto+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      if (window.location.protocol === 'file:') {
+        window.location.replace('http://localhost:3400/');
+      }
+    </script>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -167,6 +172,7 @@
               </div>
               <p class="card-meta" id="selectedDayMeta"></p>
             </header>
+            <p class="day-insight" id="selectedDayInsight"></p>
             <div class="day-context-list" id="selectedDayContext"></div>
             <div class="event-list" id="calendarEventList"></div>
           </article>
@@ -240,6 +246,7 @@
           <a class="btn btn-outline" id="drawerMapButton" target="_blank" rel="noreferrer" data-i18n="openMap">Open map</a>
           <a class="btn btn-primary" id="drawerGoogleButton" target="_blank" rel="noreferrer" data-i18n="addGoogle">Add to Google Calendar</a>
           <a class="btn btn-outline" id="drawerIcsButton" data-i18n="downloadIcs">Download .ics</a>
+          <button class="btn btn-outline" id="drawerCopyButton" type="button" data-i18n="copyEvent">Copy event</button>
         </div>
       </article>
     </aside>

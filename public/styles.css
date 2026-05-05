@@ -732,6 +732,17 @@ body[data-month-variant='grid'] .event-card {
   line-height: 1.45;
 }
 
+.day-insight {
+  margin: -4px 0 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ui-action) 22%, var(--ui-border) 78%);
+  background: color-mix(in srgb, var(--ui-action-soft) 28%, transparent 72%);
+  color: color-mix(in srgb, var(--ui-action) 54%, var(--ui-ink-soft) 46%);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.9fr);
